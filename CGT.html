@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Mis Tarjetas — Control de crédito</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F0F1F5;
+    --surface:#FFFFFF;
+    --ink:#1B4332;
+    --ink-2:#2D6A4F;
+    --line:#E4E4EC;
+    --text:#181A20;
+    --muted:#71747E;
+    --accent:#B8860B;
+    --accent-soft:#F5ECD1;
+    --alert:#E5484D;
+    --alert-soft:#FCE4E4;
+    --good:#0E8F63;
+    --good-soft:#E1F5EC;
+    --gold:#B8860B;
+    --gold-soft:#FBF0D9;
+    --shadow-sm: 0 1px 2px rgba(20,20,35,.05);
+    --shadow-md: 0 10px 28px rgba(20,20,35,.08);
+  }
+  html,body{ overflow-x:hidden; }
+  *{box-sizing:border-box; min-width:0;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{ font-variant-numeric: tabular-nums; }
+  h1,h2,h3{ font-family:'Space Grotesk', sans-serif; font-weight:600; margin:0; letter-spacing:-.01em; }
+  #app{ max-width:520px; margin:0 auto; padding:0 0 90px 0; min-height:100vh; background:var(--bg); position:relative; overflow-x:hidden; }
+
+  /* Header */
+  .topbar{
+    background:var(--ink);
+    color:#fff;
+    padding:22px 18px 18px 18px;
+    border-radius:0 0 22px 22px;
+  }
+  .topbar h1{ font-size:21px; color:#fff; }
+  .topbar .sub{ color:#9A9DAA; font-size:12.5px; margin-top:3px; }
+
+  /* Alert banner */
+  .alert-strip{
+    margin:14px 16px 0 16px;
+    background:var(--alert);
+    color:#fff;
+    padding:11px 14px;
+    border-radius:12px;
+    font-size:13.5px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-weight:500;
+  }
+  .week-strip{
+    margin:10px 16px 0 16px;
+    border-left:3px solid var(--gold);
+    background:var(--gold-soft);
+    color:#6b5320;
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:13px;
+  }
+
+  /* Card tabs */
+  .tabs-row{
+    display:flex; gap:8px; overflow-x:auto;
+    padding:16px 16px 4px 16px;
+    scrollbar-width:none;
+  }
+  .tabs-row::-webkit-scrollbar{ display:none; }
+  .tab{
+    flex:0 0 auto;
+    padding:9px 15px;
+    border-radius:12px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:all .15s;
+    font-family:'Inter',sans-serif;
+  }
+  .tab.all{ background:var(--ink); color:#fff; border:1.5px solid var(--ink); }
+  .tab.all:not(.active){ background:#fff; color:var(--muted); border:1.5px solid var(--line); }
+
+  .content{ padding:16px; }
+
+  /* Summary card (dashboard, all view) */
+  .sumcard{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:12px;
+    box-shadow:var(--shadow-sm);
+    position:relative;
+    overflow:hidden;
+  }
+  .sumcard::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--card-color, var(--ink));
+  }
+  .sumcard .head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; margin-top:2px;}
+  .swatch{ width:12px; height:12px; border-radius:50%; flex:0 0 auto; }
+  .sumcard .bank{ font-weight:600; font-size:15.5px; font-family:'Space Grotesk',sans-serif; }
+  .sumcard .grid{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px 14px; }
+  .metric .label{ font-size:11px; color:var(--muted); text-transform:none; }
+  .metric .value{ font-size:16.5px; font-weight:700; margin-top:2px; font-family:'Space Grotesk',sans-serif;}
+  .metric .value.bad{ color:var(--alert); }
+  .metric .value.good{ color:var(--good); }
+  .bar-track{ height:8px; background:var(--bg); border-radius:5px; margin-top:10px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:5px; }
+
+  /* Single card detail */
+  .detail-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px; flex-wrap:wrap; }
+  .detail-head .title{ display:flex; align-items:center; gap:10px; min-width:0; flex:1 1 auto; }
+  .detail-head .title h3{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .detail-head .actions{ display:flex; gap:6px; flex:0 0 auto; }
+  .icon-btn{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:7px 11px; font-size:12px; color:var(--ink); cursor:pointer; font-weight:600; flex:0 0 auto;
+  }
+  .viz-toggle{ display:flex; gap:6px; margin:8px 0 14px 0; }
+  .viz-toggle button{
+    flex:1; background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:8px; font-size:12px; cursor:pointer; color:var(--muted); font-weight:600; font-family:'Inter',sans-serif;
+  }
+  .viz-toggle button.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+
+  .donut-wrap{ display:flex; align-items:center; gap:16px; padding:6px 0 4px 0; }
+  .period-line{ font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .period-line b{ color:var(--text); }
+
+  /* Entries */
+  .entry-row{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:11px 0; border-bottom:1px solid var(--line);
+    gap:10px;
+  }
+  .entry-row:last-child{ border-bottom:none; }
+  .entry-left{ min-width:0; }
+  .entry-left .concept{ font-weight:600; font-size:14px; overflow-wrap:break-word; }
+  .entry-left .meta{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .entry-amt{ font-weight:700; font-size:14.5px; white-space:nowrap; font-family:'Space Grotesk',sans-serif; flex-shrink:0;}
+  .entry-amt.neg{ color:var(--good); }
+  .entry-del{ background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-left:8px; text-decoration:underline;}
+  .tag{
+    display:inline-block; font-size:10px; padding:2px 7px; border-radius:20px; margin-left:6px;
+    font-weight:600;
+  }
+  .tag.msi{ background:var(--gold-soft); color:#6b5320; }
+  .tag.sub{ background:var(--accent-soft); color:#7a5c08; }
+
+  .empty{ text-align:center; color:var(--muted); font-size:13px; padding:24px 10px; }
+
+  /* Forms */
+  .card-form{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:11.5px; color:var(--muted); margin-bottom:5px; font-weight:600; }
+  .field input, .field select{
+    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:10px;
+    font-size:16px; font-family:inherit; background:var(--bg); color:var(--text);
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--accent); background:#fff; }
+  .row2{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .row3{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .palette{ display:flex; flex-wrap:wrap; gap:10px; margin-top:2px; }
+  .swatch-pick{
+    width:32px; height:32px; border-radius:9px; cursor:pointer; border:2px solid transparent;
+    display:flex; align-items:center; justify-content:center; transition:transform .1s;
+  }
+  .swatch-pick.sel{ box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--ink); transform:scale(1.05); }
+  .swatch-pick svg{ display:none; }
+  .swatch-pick.sel svg{ display:block; }
+  .btn{
+    width:100%; padding:12px; border-radius:12px; border:none; font-weight:600; font-size:14px;
+    cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .btn.primary{ background:var(--ink); color:#fff; box-shadow:var(--shadow-sm); }
+  .btn.ghost{ background:transparent; color:var(--muted); border:1.5px solid var(--line); margin-top:8px;}
+  .btn.warn{ background:var(--alert); color:#fff; margin-top:8px;}
+
+  .fab{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    max-width:520px; width:calc(100% - 32px);
+    background:var(--ink); color:#fff; border:none; border-radius:14px;
+    padding:15px; font-weight:700; font-size:14px; cursor:pointer;
+    box-shadow:var(--shadow-md); font-family:'Inter',sans-serif;
+  }
+
+  .modal-bg{
+    position:fixed; inset:0; background:rgba(15,16,22,.5); display:flex; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .modal{
+    background:var(--bg); width:100%; max-width:520px; border-radius:20px 20px 0 0;
+    padding:20px; max-height:88vh; overflow-y:auto; overflow-x:hidden;
+  }
+  .modal h3{ margin-bottom:14px; font-size:19px; }
+  .modal-close{ float:right; background:none; border:none; font-size:20px; color:var(--muted); cursor:pointer; }
+
+  .hist-item{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:10px; cursor:pointer; }
+  .hist-item .top{ display:flex; justify-content:space-between; font-weight:600; font-size:13.5px; }
+  .hist-item .sub{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+  .concept-suggest{ font-size:11px; color:var(--muted); margin-top:4px; }
+
+  .lock-screen{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:var(--ink); padding:24px;
+  }
+  .lock-card{
+    background:var(--bg); border-radius:20px; padding:28px 22px; width:100%; max-width:360px;
+    box-shadow:var(--shadow-md);
+  }
+  .lock-card h1{ font-size:19px; margin-bottom:6px; }
+  .lock-card .sub{ color:var(--muted); font-size:12.5px; margin-bottom:20px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const PALETTE = ['#B23A2E','#3E6B52','#2E4C6D','#A67F32','#6B4C7A','#2E6D6B','#8A4C3E','#4C5A7A','#7A6B2E','#5A3E6D','#3E5A8A','#7A3E52','#111827','#1F2937','#374151','#4B5563','#6B7280','#78716C'];
+
+let state = { cards: [], cardData: {}, selectedCardId: 'all', view: 'dashboard', addingCard:false, editingCardId:null, addingEntry:false, addingPayment:false, historyMonthKey:null, chartMode:'number' };
+let loaded = false;
+let storageWarning = false;
+let useLocalFallback = false;
+const LS_KEY = 'ledger-state-fallback-v1';
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+async function storageGet(key){
+  if(!useLocalFallback){
+    try{
+      const res = await window.storage.get(key, false);
+      return res ? res.value : null;
+    }catch(e){ /* fall through to try local */ }
+  }
+  try{
+    return localStorage.getItem(key);
+  }catch(e){ return null; }
+}
+async function storageSet(key, value){
+  if(!useLocalFallback){
+    try{
+      await window.storage.set(key, value, false);
+      return true;
+    }catch(e){ /* fall through to local */ }
+  }
+  try{
+    localStorage.setItem(key, value);
+    return true;
+  }catch(e){ return false; }
+}
+
+async function loadState(){
+  // Detect whether the Claude artifact storage API works here; if not, use the browser's own storage.
+  try{
+    await window.storage.set('__ping__', '1', false);
+  }catch(e){
+    useLocalFallback = true;
+  }
+  try{
+    const raw = await storageGet(LS_KEY);
+    if(raw){ state = Object.assign(state, JSON.parse(raw)); }
+  }catch(e){ /* no data yet */ }
+  if(useLocalFallback){
+    try{ localStorage.setItem('__ping__','1'); }
+    catch(e){ storageWarning = true; }
+  }
+  loaded = true;
+  migrateLegacyData();
+  render();
+}
+
+function migrateLegacyData(){
+  state.cards.forEach(c=>{
+    const cd = ensureCardData(c.id);
+    if(cd.migratedV2) return;
+    Object.values(cd.months||{}).forEach(m=>{
+      (m.entries||[]).forEach(e=>{
+        if(e.isCarried===undefined) e.isCarried = false;
+      });
+      if(m.pagoRealizado!==undefined && m.pagoRealizado!==null){
+        m.pagos = m.pagos || [];
+        if(m.pagos.length===0){ m.pagos.push({id:uid(), amount:Number(m.pagoRealizado)}); }
+        delete m.pagoRealizado;
+      }
+      if(!m.pagos) m.pagos = [];
+      if(!m.periodEnd && m.corte){ m.periodEnd = m.corte; }
+      if(!m.inicio && m.corte){ m.inicio = addMonths(m.corte,-1); }
+    });
+    cd.migratedV2 = true;
+  });
+}
+async function saveState(){
+  const ok = await storageSet(LS_KEY, JSON.stringify(state));
+  if(!ok && !storageWarning){ storageWarning = true; render(); }
+  else if(ok && storageWarning){ storageWarning = false; render(); }
+}
+
+function fmt(n){
+  n = Number(n)||0;
+  const neg = n<0;
+  const s = Math.abs(n).toLocaleString('es-MX',{minimumFractionDigits:2, maximumFractionDigits:2});
+  return (neg?'-':'') + '$' + s;
+}
+function formatMoneyDisplay(n){
+  if(n===null || n===undefined || n==='') return '';
+  n = Number(n);
+  if(isNaN(n)) return '';
+  const neg = n<0;
+  const s = Math.abs(n).toLocaleString('en-US',{maximumFractionDigits:2});
+  return (neg?'-':'')+'$'+s;
+}
+function parseMoneyValue(str){
+  if(str===null || str===undefined) return NaN;
+  const neg = str.trim().startsWith('-');
+  const cleaned = str.replace(/[^0-9.]/g,'');
+  const n = parseFloat(cleaned);
+  if(isNaN(n)) return NaN;
+  return neg ? -n : n;
+}
+function wireMoneyField(id, allowNegative){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const doFormat = ()=>{
+    let raw = el.value;
+    const neg = allowNegative && raw.trim().startsWith('-');
+    raw = raw.replace(/[^0-9.]/g,'');
+    const parts = raw.split('.');
+    let intPart = (parts[0]||'').replace(/^0+(?=\d)/,'');
+    let decPart = parts.length>1 ? parts.slice(1).join('').slice(0,2) : null;
+    let formattedInt = intPart ? Number(intPart).toLocaleString('en-US') : '';
+    let result = (neg?'-':'') + '$' + (formattedInt||'0');
+    if(decPart!==null) result += '.'+decPart;
+    el.value = result;
+  };
+  el.addEventListener('input', doFormat);
+}
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// alert()/confirm() can be silently blocked in sandboxed preview frames, so we use inline UI instead.
+function showModalError(msg){
+  const el = document.querySelector('.modal-bg:last-child #modal-error');
+  if(el){ el.textContent = msg; el.style.display='block'; }
+}
+function showConfirm(message, onConfirmFn){
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.id='confirm-modal-'+uid();
+  const wid = wrap.id;
+  wrap.innerHTML = `<div class="modal">
+    <h3>Confirmar</h3>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">${message}</p>
+    <button class="btn warn" id="${wid}-yes">Sí, continuar</button>
+    <button class="btn ghost" onclick="document.getElementById('${wid}').remove();">Cancelar</button>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+  document.getElementById(wid+'-yes').addEventListener('click', ()=>{
+    document.getElementById(wid).remove();
+    onConfirmFn();
+  });
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function buildEntryDate(day){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth()+1).padStart(2,'0');
+  const d = String(day).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function periodMonthOptions(m){
+  if(!m) return [];
+  const opts = [];
+  const add = (iso)=>{
+    if(!iso) return;
+    const d = new Date(iso+'T00:00:00');
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if(!opts.find(o=>o.key===key)) opts.push({key, label: monthOptionLabel(d.getFullYear(), d.getMonth()+1)});
+  };
+  add(m.inicio);
+  add(m.periodEnd);
+  return opts;
+}
+function monthOptionLabel(y, mo){
+  const d = new Date(y, mo-1, 1);
+  const s = d.toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function buildEntryDateFromMonth(monthKey, day){
+  return `${monthKey}-${String(day).padStart(2,'0')}`;
+}
+function addMonths(iso, m){
+  const d = new Date(iso+'T00:00:00');
+  d.setMonth(d.getMonth()+m);
+  return d.toISOString().slice(0,10);
+}
+function daysBetween(a,b){
+  const d1 = new Date(a+'T00:00:00'), d2 = new Date(b+'T00:00:00');
+  return Math.round((d2-d1)/86400000);
+}
+function fmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('es-MX',{day:'numeric',month:'short'});
+}
+function addMonthMinusOneDay(iso){
+  if(!iso) return '';
+  const d = new Date(iso+'T00:00:00');
+  d.setMonth(d.getMonth()+1);
+  d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function autofillFromInicio(inicioId, endId, corteId){
+  const inicioVal = document.getElementById(inicioId).value;
+  if(!inicioVal) return;
+  const endEl = document.getElementById(endId);
+  if(!endEl.dataset.touched){
+    endEl.value = addMonthMinusOneDay(inicioVal);
+  }
+  const corteEl = document.getElementById(corteId);
+  if(!corteEl.dataset.touched){
+    corteEl.value = endEl.value;
+  }
+}
+function autofillCorteFromEnd(endId, corteId){
+  const corteEl = document.getElementById(corteId);
+  if(corteEl.dataset.touched) return;
+  corteEl.value = document.getElementById(endId).value;
+}
+function periodMonthLabel(m){
+  const start = m.inicio || m.corte;
+  if(!start) return '';
+  const d = new Date(start+'T00:00:00');
+  const s = d.toLocaleDateString('es-MX', {month:'long', year:'numeric'});
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function periodRangeLabel(m){
+  const start = m.inicio || m.corte;
+  const end = m.periodEnd || m.corte;
+  return `${fmtDate(start)} — ${fmtDate(end)}`;
+}
+
+function ensureCardData(id){
+  if(!state.cardData[id]) state.cardData[id] = { concepts:{}, months:{}, currentMonthKey:null, balance:0 };
+  if(state.cardData[id].balance === undefined) state.cardData[id].balance = 0;
+  return state.cardData[id];
+}
+
+function currentMonth(cardId){
+  const cd = ensureCardData(cardId);
+  if(cd.currentMonthKey && cd.months[cd.currentMonthKey]) return cd.months[cd.currentMonthKey];
+  return null;
+}
+
+function monthTotal(month){
+  return (month.entries||[]).reduce((s,e)=>s+Number(e.amount||0),0);
+}
+function monthPagosTotal(month){
+  return (month.pagos||[]).reduce((s,p)=>s+Number(p.amount||0),0);
+}
+function entryReservedAmount(e){
+  // Full amount an entry represents against the credit limit while it's listed in a period.
+  if(e.type==='msi'){
+    const monthly = Number(e.originalAmount)/e.installmentTotal;
+    return Number(e.originalAmount) - monthly*(e.installmentCurrent-1);
+  }
+  return Number(e.amount);
+}
+function findPeriodByCorte(cardId, corteValue, excludeKey){
+  if(!corteValue) return null;
+  const cd = ensureCardData(cardId);
+  const key = Object.keys(cd.months).find(k => k!==excludeKey && cd.months[k].corte === corteValue);
+  return key ? cd.months[key] : null;
+}
+function periodCargos(m){
+  if(!m) return 0;
+  return (m.entries||[]).reduce((s,e)=>s+entryReservedAmount(e),0);
+}
+function periodCarryOver(cardId, m, visited){
+  // Lo que sigue debiéndose del periodo anterior, calculado en vivo (no un número fijo),
+  // para que si luego pagas ese periodo anterior, aquí se refleje solo automáticamente.
+  // visited evita ciclos infinitos si las fechas quedaron enredadas por ediciones manuales.
+  if(!m || !m.prevCorte) return 0;
+  visited = visited || new Set();
+  if(visited.has(m.key)) return 0;
+  visited = new Set(visited);
+  visited.add(m.key);
+  const prev = findPeriodByCorte(cardId, m.prevCorte, m.key);
+  if(!prev || visited.has(prev.key)) return 0;
+  const prevPendiente = periodPendiente(cardId, prev, visited);
+  // Solo las mensualidades a meses amortizan la MISMA deuda que ya contaba el periodo anterior;
+  // una suscripción que se repite es un cargo nuevo cada vez, no continúa la deuda anterior.
+  const carried = (m.entries||[]).filter(e=>e.isCarried && e.type==='msi').reduce((s,e)=>s+entryReservedAmount(e),0);
+  return Math.max(0, Math.round((prevPendiente - carried)*100)/100);
+}
+function periodUsedAmount(cardId, m, visited){
+  if(!m) return 0;
+  return periodCargos(m) + periodCarryOver(cardId, m, visited);
+}
+function periodPendiente(cardId, m, visited){
+  if(!m) return 0;
+  return periodUsedAmount(cardId, m, visited) - monthPagosTotal(m);
+}
+function periodSaldoAPagar(cardId, m, visited){
+  // Solo lo facturado de este periodo (p.ej. la mensualidad, no el total de la compra a meses),
+  // más lo que siga pendiente del periodo anterior, menos lo pagado.
+  if(!m) return 0;
+  return monthTotal(m) + periodCarryOver(cardId, m, visited) - monthPagosTotal(m);
+}
+function showEntryDetailById(cardId, monthKey, entryId){
+  const cd = ensureCardData(cardId);
+  const m = cd.months[monthKey];
+  if(!m) return;
+  const entry = (m.entries||[]).find(x=>x.id===entryId);
+  if(!entry) return;
+  openEntryDetailStandalone(entry, periodMonthLabel(m));
+}
+function openEntryDetailStandalone(entry, contextLabel){
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.id = 'detail-modal-'+uid();
+  let body = '';
+  if(entry.type==='msi'){
+    const monthly = Number(entry.originalAmount)/entry.installmentTotal;
+    const rem = Number(entry.originalAmount) - monthly*entry.installmentCurrent;
+    body = `<div class="metric"><div class="label">Monto original de la compra</div><div class="value num">${fmt(entry.originalAmount)}</div></div>
+      <div class="metric" style="margin-top:12px;"><div class="label">Mensualidad</div><div class="value num">${fmt(monthly)}</div></div>
+      <div class="metric" style="margin-top:12px;"><div class="label">Cuota de este periodo</div><div class="value num">${entry.installmentCurrent} de ${entry.installmentTotal}</div></div>
+      <div class="metric" style="margin-top:12px;"><div class="label">Restante después de este pago</div><div class="value num">${fmt(rem)}</div></div>`;
+  } else {
+    body = `<div class="metric"><div class="label">${entry.type==='sub'?'Suscripción':'Monto'}</div><div class="value num">${fmt(entry.amount)}</div></div>`;
+  }
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="document.getElementById('${wrap.id}').remove()">&times;</button>
+    <h3>${entry.concept}</h3>
+    <div class="period-line">${contextLabel} · ${entry.date ? fmtDate(entry.date) : 'Día '+entry.day}</div>
+    <div class="card-form">${body}</div>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+function openDebugView(cardId){ state.debugCardId = cardId; render(); }
+function closeDebugView(){ state.debugCardId = null; render(); }
+function renderDebugModal(){
+  const cardId = state.debugCardId;
+  const cd = ensureCardData(cardId);
+  const c = state.cards.find(x=>x.id===cardId);
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="closeDebugView()">&times;</button>
+    <h3>Datos técnicos — ${c?c.bank:''}</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Toma una captura de esto y compártela para que pueda revisar el detalle.</p>
+    <pre style="white-space:pre-wrap;word-break:break-all;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:10.5px;line-height:1.4;">${JSON.stringify(cd, null, 2).replace(/</g,'&lt;')}</pre>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+
+function createFirstMonth(card, opts){
+  const cd = ensureCardData(card.id);
+  const key = 'm_'+Date.now();
+  cd.months[key] = {
+    key,
+    inicio: opts.inicio,
+    periodEnd: opts.periodEnd,
+    corte: opts.corte,
+    fechaLimite: opts.fechaLimite,
+    prevCorte: null,
+    entries: [],
+    pagos: [],
+    closed:false
+  };
+  cd.currentMonthKey = key;
+}
+
+function findNextPeriod(cardId, fromMonth){
+  // Un periodo que ya quedó encadenado después de fromMonth (por ejemplo, creado antes
+  // por un movimiento con fecha adelantada), sin que fromMonth se haya cerrado todavía.
+  if(!fromMonth) return null;
+  const cd = ensureCardData(cardId);
+  const key = Object.keys(cd.months).find(k => cd.months[k].prevCorte === fromMonth.corte);
+  return key ? cd.months[key] : null;
+}
+function mergeCarriedEntriesInto(targetMonth, prev){
+  const toCarry = carriedEntriesFrom(prev, targetMonth.inicio || targetMonth.corte);
+  toCarry.forEach(e=>{
+    const exists = (targetMonth.entries||[]).some(x=>x.concept===e.concept && x.type===e.type);
+    if(!exists){
+      targetMonth.entries = targetMonth.entries || [];
+      targetMonth.entries.push(e);
+    }
+  });
+}
+function openCloseMonthModal(cardId){
+  const prev = currentMonth(cardId);
+  if(!prev) return;
+  const existingNext = findNextPeriod(cardId, prev);
+  if(existingNext){
+    showConfirm(`Ya existe un periodo siguiente, ${periodMonthLabel(existingNext)} (se creó antes por un movimiento con fecha adelantada). Se va a usar ese periodo en vez de crear uno nuevo. ¿Continuar?`, ()=>switchToExistingNextPeriod(cardId));
+    return;
+  }
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.id='closemonth-'+uid();
+  const wid = wrap.id;
+  const pendiente = periodPendiente(cardId, prev);
+  const prevInicio = prev.inicio || addMonths(prev.corte,-1);
+  const prevEnd = prev.periodEnd || prev.corte;
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="document.getElementById('${wid}').remove()">&times;</button>
+    <h3>Cerrar periodo y crear el siguiente</h3>
+    <div id="modal-error" style="display:none;background:var(--alert-soft);color:#8a2a26;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px;">Las mensualidades sin terminar y las suscripciones continúan automáticamente al nuevo periodo. Las compras de una sola exhibición no se repiten. ${pendiente>0.5 ? `Además, queda un saldo pendiente de <b>${fmt(pendiente)}</b> sin pagar que se arrastra al periodo nuevo.` : 'El periodo anterior quedó saldado, así que no hay saldo extra que arrastrar.'}</p>
+    <div class="field"><label>Fecha de inicio</label><input id="nm-inicio" type="date" value="${addMonths(prevInicio,1)}"></div>
+    <div class="field"><label>Fecha fin del periodo</label><input id="nm-end" type="date" value="${addMonths(prevEnd,1)}"></div>
+    <div class="field"><label>Fecha de corte</label><input id="nm-corte" type="date" value="${addMonths(prev.corte,1)}"></div>
+    <div class="field"><label>Fecha límite de pago</label><input id="nm-limite" type="date" value="${addMonths(prev.fechaLimite,1)}"></div>
+    <button class="btn primary" onclick="confirmCloseMonth('${cardId}','${wid}')">Cerrar periodo y crear el siguiente</button>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+function shiftDateToMonth(originalDate, anchorDate){
+  // Conserva el día original pero toma el mes/año del periodo nuevo (anchorDate).
+  if(!originalDate) return originalDate;
+  if(!anchorDate) return originalDate;
+  const day = originalDate.slice(8,10);
+  const ym = anchorDate.slice(0,7);
+  return `${ym}-${day}`;
+}
+function carriedEntriesFrom(prev, anchorDate){
+  // Mensualidades (meses sin intereses) y suscripciones continúan automáticamente.
+  // Las compras de una sola exhibición no se repiten, así que no se arrastran como movimiento.
+  const newEntries = [];
+  (prev.entries||[]).forEach(e=>{
+    if(e.type==='msi'){
+      if(e.installmentCurrent < e.installmentTotal){
+        newEntries.push(Object.assign({}, e, {id:uid(), installmentCurrent:e.installmentCurrent+1, isCarried:true, date: shiftDateToMonth(e.date, anchorDate)}));
+      }
+    } else if(e.type==='sub'){
+      newEntries.push(Object.assign({}, e, {id:uid(), isCarried:true, date: shiftDateToMonth(e.date, anchorDate)}));
+    }
+  });
+  return newEntries;
+}
+function switchToExistingNextPeriod(cardId){
+  const cd = ensureCardData(cardId);
+  const prev = currentMonth(cardId);
+  if(!prev) return;
+  const next = findNextPeriod(cardId, prev);
+  if(!next) return;
+  prev.closed = true;
+  mergeCarriedEntriesInto(next, prev);
+  cd.currentMonthKey = next.key;
+  saveState(); render();
+}
+function confirmCloseMonth(cardId, modalId){
+  const inicio = document.getElementById('nm-inicio').value;
+  const periodEnd = document.getElementById('nm-end').value;
+  const corte = document.getElementById('nm-corte').value;
+  const fechaLimite = document.getElementById('nm-limite').value;
+  if(!inicio || !periodEnd || !corte || !fechaLimite){ showModalError('Completa las cuatro fechas.'); return; }
+  const cd = ensureCardData(cardId);
+  const prev = currentMonth(cardId);
+  if(!prev) return;
+  prev.closed = true;
+  const key = 'm_'+Date.now();
+  cd.months[key] = {
+    key,
+    inicio,
+    periodEnd,
+    corte,
+    fechaLimite,
+    prevCorte: prev.corte,
+    entries: carriedEntriesFrom(prev, inicio),
+    pagos: [],
+    closed:false
+  };
+  cd.currentMonthKey = key;
+  document.getElementById(modalId).remove();
+  saveState(); render();
+}
+function autoAdvancePeriodsUntil(cardId, date){
+  // Si la fecha de un movimiento cae después del fin del periodo activo, se crean
+  // (o se reutilizan si ya existían) los periodos siguientes encadenados, SIN cerrar
+  // ni dejar de usar el periodo activo, que puede seguir recibiendo movimientos normalmente.
+  const cd = ensureCardData(cardId);
+  let cur = currentMonth(cardId);
+  if(!cur || !cur.periodEnd || date <= cur.periodEnd) return null;
+  let guard = 0;
+  let advancedAtLeastOnce = false;
+  while(cur && cur.periodEnd && date > cur.periodEnd && guard < 24){
+    guard++;
+    let next = findNextPeriod(cardId, cur);
+    if(!next){
+      const newInicio = addMonths(cur.inicio || addMonths(cur.corte,-1), 1);
+      const newEnd = addMonths(cur.periodEnd, 1);
+      const newCorte = addMonths(cur.corte, 1);
+      const newLimite = addMonths(cur.fechaLimite, 1);
+      const key = 'm_'+Date.now()+'_'+guard;
+      cd.months[key] = {
+        key,
+        inicio: newInicio,
+        periodEnd: newEnd,
+        corte: newCorte,
+        fechaLimite: newLimite,
+        prevCorte: cur.corte,
+        entries: carriedEntriesFrom(cur, newInicio),
+        pagos: [],
+        closed:false
+      };
+      next = cd.months[key];
+    }
+    cur = next;
+    advancedAtLeastOnce = true;
+  }
+  return advancedAtLeastOnce ? cur : null;
+}
+
+function alertsForCard(card){
+  const m = currentMonth(card.id);
+  if(!m || !m.fechaLimite) return {urgent:false, weekly:false, days:null};
+  const d = daysBetween(todayISO(), m.fechaLimite);
+  return { urgent: d>=0 && d<=2, weekly: d>=0 && d<=7, days:d };
+}
+
+// ---------------- RENDER ----------------
+function render(){
+  if(!loaded){ document.getElementById('app').innerHTML = '<div style="padding:40px;text-align:center;color:#746C5E;">Cargando…</div>'; return; }
+  const app = document.getElementById('app');
+  try{
+    let html = '';
+    html += renderTopbar();
+    html += renderAlerts();
+    html += renderTabs();
+    if(state.selectedCardId==='all'){
+      html += renderDashboardAll();
+    } else {
+      html += renderCardDetail(state.selectedCardId);
+    }
+    html += `<button class="fab" onclick="openAddCard()">+ Nueva tarjeta</button>`;
+    app.innerHTML = html;
+
+    if(state.historyMonthKey) renderHistoryDetailModal();
+    if(state.debugCardId) renderDebugModal();
+    if(state.addingCard || state.editingCardId) renderCardModal();
+    if(state.addingEntry || state.editingEntryRef) renderEntryModal();
+    if(state.addingPayment || state.editingPaymentRef) renderPaymentModal();
+  }catch(err){
+    console.error('Render error', err);
+    app.innerHTML = `<div style="padding:24px;">
+      <h3 style="margin-bottom:10px;">Algo salió mal al mostrar la app</h3>
+      <p style="font-size:13px;color:#746C5E;margin-bottom:14px;">${(err && err.message ? err.message : 'Error desconocido').replace(/</g,'&lt;')}</p>
+      <button class="btn primary" onclick="state.selectedCardId='all'; render();">Volver al inicio</button>
+      <button class="btn ghost" onclick="exportBackup()">Exportar mis datos antes de seguir</button>
+    </div>`;
+  }
+}
+
+function renderTopbar(){
+  return `<div class="topbar">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h1>Mis Tarjetas</h1>
+        <div class="sub">Control de crédito y mensualidades</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="icon-btn" style="background:transparent;color:#fff;border-color:#4A5B66;" onclick="exportBackup()">Exportar</button>
+        <button class="icon-btn" style="background:transparent;color:#fff;border-color:#4A5B66;" onclick="document.getElementById('import-file').click()">Importar</button>
+      </div>
+    </div>
+    <input type="file" id="import-file" accept="application/json" style="display:none" onchange="importBackup(this.files[0])">
+    ${storageWarning ? `<div style="margin-top:10px;background:#3a2a25;color:#f0d9d3;padding:8px 10px;border-radius:8px;font-size:11.5px;">Este navegador está bloqueando el guardado (por ejemplo, modo incógnito). Usa <b>Exportar</b> antes de salir y <b>Importar</b> al volver a abrir, para no perder tus datos.</div>` : ''}
+  </div>`;
+}
+
+function exportBackup(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mis-tarjetas-respaldo.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function showToast(msg){
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:90px;left:50%;transform:translateX(-50%);max-width:calc(100% - 40px);background:#1B4332;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:99;box-shadow:0 8px 24px rgba(0,0,0,.25);text-align:center;';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 3200);
+}
+function importBackup(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.cards){ showToast('El archivo no parece un respaldo válido.'); return; }
+      state = data;
+      saveState();
+      render();
+      showToast('Respaldo importado correctamente.');
+    }catch(err){
+      showToast('No se pudo leer el archivo de respaldo.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function renderAlerts(){
+  let urgent = [], weekly = [];
+  state.cards.forEach(c=>{
+    const a = alertsForCard(c);
+    if(a.urgent) urgent.push(c);
+    else if(a.weekly) weekly.push(c);
+  });
+  let html='';
+  urgent.forEach(c=>{
+    const a = alertsForCard(c);
+    const txt = a.days===0 ? 'vence hoy' : (a.days===1 ? 'vence mañana' : `vence en ${a.days} días`);
+    html += `<div class="alert-strip">⚠ Pago de <b>${c.bank}</b> ${txt} — ${fmtDate(currentMonth(c.id).fechaLimite)}</div>`;
+  });
+  weekly.forEach(c=>{
+    html += `<div class="week-strip">Esta semana toca el pago de <b>${c.bank}</b> (${fmtDate(currentMonth(c.id).fechaLimite)})</div>`;
+  });
+  return html;
+}
+
+function renderTabs(){
+  let html = `<div class="tabs-row">`;
+  html += `<button class="tab all ${state.selectedCardId==='all'?'active':''}" onclick="selectCard('all')">Todas</button>`;
+  state.cards.forEach(c=>{
+    const active = state.selectedCardId===c.id;
+    const style = active
+      ? `background:${c.color}; color:#fff;`
+      : `background:${hexToRgba(c.color,0.12)}; color:${c.color};`;
+    html += `<button class="tab" style="${style}" onclick="selectCard('${c.id}')">${c.bank}</button>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function renderDashboardAll(){
+  if(state.cards.length===0){
+    return `<div class="content"><div class="empty">Aún no tienes tarjetas registradas.<br>Toca "+ Nueva tarjeta" para empezar.</div></div>`;
+  }
+  let html = `<div class="content">`;
+  state.cards.forEach(c=>{
+    const cd = ensureCardData(c.id);
+    const m = currentMonth(c.id);
+    const pendiente = m ? periodPendiente(c.id, m) : 0;
+    const usado = Math.max(0, pendiente);
+    const avail = Number(c.limit) - usado;
+    const saldo = m ? Math.max(0, periodSaldoAPagar(c.id, m)) : 0;
+    const pct = Math.min(100, Math.max(0, (usado/Number(c.limit||1))*100));
+    html += `<div class="sumcard" style="--card-color:${c.color}" onclick="selectCard('${c.id}')">
+      <div class="head">
+        <div class="swatch" style="background:${c.color}"></div>
+        <div class="bank">${c.bank}</div>
+      </div>
+      <div class="grid">
+        <div class="metric"><div class="label">Límite</div><div class="value num">${fmt(c.limit)}</div></div>
+        <div class="metric"><div class="label">Usado de tu crédito</div><div class="value num">${fmt(usado)}</div></div>
+        <div class="metric"><div class="label">Disponible</div><div class="value num good">${fmt(avail)}</div></div>
+        <div class="metric"><div class="label">Saldo a pagar (periodo)</div><div class="value num ${saldo>0?'bad':''}">${fmt(saldo)}</div></div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${c.color}"></div></div>
+    </div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
+function renderCardDetail(cardId){
+  const c = state.cards.find(x=>x.id===cardId);
+  if(!c){ state.selectedCardId='all'; return renderDashboardAll(); }
+  const cd = ensureCardData(cardId);
+  const m = currentMonth(cardId);
+  const cargos = m? periodCargos(m) : 0;
+  const pagado = m? monthPagosTotal(m) : 0;
+  const carryOver = m? periodCarryOver(cardId, m) : 0;
+  const pendienteRaw = m ? periodPendiente(cardId, m) : 0;
+  const usado = Math.max(0, pendienteRaw);
+  const avail = Number(c.limit) - usado;
+  const saldoRaw = m ? periodSaldoAPagar(cardId, m) : 0;
+  const saldo = Math.max(0, saldoRaw);
+  const surplus = saldoRaw < 0 ? Math.abs(saldoRaw) : 0;
+  const pct = Math.min(100, Math.max(0,(usado/Number(c.limit||1))*100));
+
+  let html = `<div class="content">`;
+  html += `<div class="detail-head">
+    <div class="title"><div class="swatch" style="background:${c.color}"></div><h3>${c.bank}</h3></div>
+    <div class="actions">
+      <button class="icon-btn" onclick="openHistory('${c.id}')">Historial</button>
+      <button class="icon-btn" onclick="openEditCard('${c.id}')">Editar</button>
+    </div>
+  </div>`;
+
+  if(!m){
+    html += `<div class="card-form" style="text-align:center;">
+      <div class="empty" style="padding:6px 0 14px 0;">Esta tarjeta todavía no tiene un periodo activo.</div>
+      <button class="btn primary" onclick="openCreatePeriod('${c.id}')">Crear periodo</button>
+    </div></div>`;
+    return html;
+  }
+
+  html += `<div class="period-line"><b>${periodMonthLabel(m)}</b> · ${periodRangeLabel(m)} · Fecha límite de pago: <b>${fmtDate(m.fechaLimite)}</b></div>`;
+
+  html += `<div class="viz-toggle">
+    <button class="${state.chartMode==='number'?'active':''}" onclick="setChartMode('number')">Números</button>
+    <button class="${state.chartMode==='bar'?'active':''}" onclick="setChartMode('bar')">Barra</button>
+    <button class="${state.chartMode==='donut'?'active':''}" onclick="setChartMode('donut')">Círculo</button>
+  </div>`;
+
+  if(state.chartMode==='number'){
+    html += `<div class="sumcard"><div class="grid">
+      <div class="metric"><div class="label">Límite</div><div class="value num">${fmt(c.limit)}</div></div>
+      <div class="metric"><div class="label">Usado de tu crédito</div><div class="value num">${fmt(usado)}</div></div>
+      <div class="metric"><div class="label">Disponible</div><div class="value num good">${fmt(avail)}</div></div>
+      <div class="metric"><div class="label">Saldo a pagar (periodo)</div><div class="value num ${saldo>0?'bad':''}">${fmt(saldo)}</div></div>
+    </div></div>`;
+    if(carryOver > 0.5){
+      html += `<div class="week-strip" style="margin-left:0;margin-right:0;">Incluye ${fmt(carryOver)} arrastrado del periodo anterior, que no se pagó por completo.</div>`;
+    }
+    if(surplus > 0.5){
+      html += `<div class="week-strip" style="margin-left:0;margin-right:0;border-left-color:var(--good);background:var(--good-soft);color:#0e5c3d;">Pagaste ${fmt(surplus)} de más — ese excedente se restará del siguiente periodo cuando lo cierres.</div>`;
+    }
+    html += `<div style="text-align:right;margin:8px 0 12px 0;">
+      <button class="entry-del" style="font-size:11px;" onclick="openDebugView('${c.id}')">Ver datos técnicos</button>
+    </div>`;
+  } else if(state.chartMode==='bar'){
+    html += `<div class="sumcard">
+      <div class="metric"><div class="label">Usado ${fmt(usado)} de ${fmt(c.limit)}</div></div>
+      <div class="bar-track" style="height:14px;"><div class="bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;">
+        <div class="metric"><div class="label">Disponible</div><div class="value num good">${fmt(avail)}</div></div>
+        <div class="metric" style="text-align:right;"><div class="label">Saldo a pagar</div><div class="value num ${saldo>0?'bad':''}">${fmt(saldo)}</div></div>
+      </div>
+    </div>`;
+  } else {
+    const r=40, circ=2*Math.PI*r;
+    const dash = circ*(pct/100);
+    html += `<div class="sumcard">
+      <div class="donut-wrap">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="${r}" fill="none" stroke="${'#EFE9DA'}" stroke-width="12"/>
+          <circle cx="50" cy="50" r="${r}" fill="none" stroke="${c.color}" stroke-width="12"
+            stroke-dasharray="${dash} ${circ-dash}" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+          <text x="50" y="55" text-anchor="middle" font-size="16" font-weight="700" fill="#23282C">${Math.round(pct)}%</text>
+        </svg>
+        <div style="flex:1;">
+          <div class="metric"><div class="label">Disponible</div><div class="value num good">${fmt(avail)}</div></div>
+          <div class="metric" style="margin-top:8px;"><div class="label">Saldo a pagar</div><div class="value num ${saldo>0?'bad':''}">${fmt(saldo)}</div></div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  html += `<h3 style="font-size:15px;margin:14px 0 8px 0;">Movimientos del periodo</h3>`;
+  html += `<div class="card-form">`;
+  if(!m.entries || m.entries.length===0){
+    html += `<div class="empty">Sin movimientos registrados todavía.</div>`;
+  } else {
+    [...m.entries].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(e=>{
+      let metaTag = '';
+      let metaExtra = '';
+      if(e.type==='msi'){
+        metaTag = `<span class="tag msi">${e.installmentCurrent} de ${e.installmentTotal}</span>`;
+        const rem = Number(e.originalAmount) - (Number(e.originalAmount)/e.installmentTotal)*e.installmentCurrent;
+        metaExtra = ` · Restante: ${fmt(rem)}`;
+      } else if(e.type==='sub'){
+        metaTag = `<span class="tag sub">Suscripción</span>`;
+      }
+      html += `<div class="entry-row">
+        <div class="entry-left" style="cursor:pointer;" onclick="showEntryDetailById('${c.id}','${m.key}','${e.id}')">
+          <div class="concept">${e.concept} ${metaTag}</div>
+          <div class="meta">${e.date ? fmtDate(e.date) : 'Día '+e.day}${metaExtra}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="entry-amt ${e.amount<0?'neg':''} num">${fmt(e.amount)}</div>
+          <button class="entry-del" onclick="openEditEntry('${c.id}','${m.key}','${e.id}')">editar</button>
+          <button class="entry-del" onclick="deleteEntry('${c.id}','${e.id}')">quitar</button>
+        </div>
+      </div>`;
+    });
+  }
+  html += `</div>`;
+
+  html += `<button class="btn primary" onclick="openAddEntry('${c.id}')">+ Registrar movimiento</button>`;
+  html += `<button class="btn ghost" onclick="openCloseMonthModal('${c.id}')">Cerrar periodo y crear el siguiente</button>`;
+
+  html += `<h3 style="font-size:15px;margin:18px 0 8px 0;">Pagos registrados en este periodo</h3>`;
+  html += `<div class="card-form">`;
+  if(!m.pagos || m.pagos.length===0){
+    html += `<div class="empty" style="padding:10px 0;">Aún no registras pagos en este periodo.</div>`;
+  } else {
+    [...m.pagos].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(p=>{
+      html += `<div class="entry-row">
+        <div class="entry-left"><div class="concept">Pago</div><div class="meta">${p.date? fmtDate(p.date) : ''}</div></div>
+        <div style="text-align:right;">
+          <div class="entry-amt num">${fmt(p.amount)}</div>
+          <button class="entry-del" onclick="openEditPayment('${c.id}','${p.id}')">editar</button>
+          <button class="entry-del" onclick="removePayment('${c.id}','${p.id}')">quitar</button>
+        </div>
+      </div>`;
+    });
+  }
+  html += `<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:13px;font-weight:600;">
+      <span>Total pagado</span><span class="num">${fmt(pagado)}</span>
+    </div>
+    <button class="btn ghost" onclick="openAddPayment('${c.id}')">+ Registrar pago</button>
+  </div>`;
+
+  html += `</div>`;
+  return html;
+}
+
+function setChartMode(m){ state.chartMode=m; render(); }
+function selectCard(id){ state.selectedCardId=id; render(); }
+
+function openAddPayment(cardId){ state.addingPayment = cardId; state.editingPaymentRef=null; render(); }
+function openEditPayment(cardId, paymentId){ state.editingPaymentRef = {cardId, paymentId}; state.addingPayment=false; render(); }
+function closePaymentModal(){ state.addingPayment = false; state.editingPaymentRef=null; render(); }
+function renderPaymentModal(){
+  const editing = !!state.editingPaymentRef;
+  const cardId = editing ? state.editingPaymentRef.cardId : state.addingPayment;
+  let existingAmount = '';
+  let existingDate = todayISO();
+  if(editing){
+    const m = currentMonth(cardId);
+    const p = m && (m.pagos||[]).find(x=>x.id===state.editingPaymentRef.paymentId);
+    if(p){ existingAmount = formatMoneyDisplay(p.amount); existingDate = p.date || todayISO(); }
+  } else {
+    // Si la fecha real de hoy no cae dentro del periodo que se está viendo (por ejemplo,
+    // al probar la app con periodos fechados en el futuro), no arranques con esa fecha
+    // porque haría que el pago se aplicara por error a un periodo anterior.
+    const cur = currentMonth(cardId);
+    if(cur && cur.inicio && cur.periodEnd){
+      const inRange = existingDate >= cur.inicio && existingDate <= cur.periodEnd;
+      if(!inRange){ existingDate = cur.fechaLimite || cur.corte || existingDate; }
+    }
+  }
+  const saveCall = editing ? `updatePayment('${cardId}','${state.editingPaymentRef.paymentId}')` : `savePayment('${cardId}')`;
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="closePaymentModal()">&times;</button>
+    <h3>${editing?'Editar pago':'Registrar pago'}</h3>
+    <div id="modal-error" style="display:none;background:var(--alert-soft);color:#8a2a26;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+    <div class="row2">
+      <div class="field"><label>Monto pagado</label><input id="p-amount" type="text" inputmode="decimal" placeholder="$0.00" value="${existingAmount}"></div>
+      <div class="field"><label>Fecha del pago</label><input id="p-date" type="date" value="${existingDate}" oninput="updatePaymentPeriodHint('${cardId}')"></div>
+    </div>
+    <button type="button" id="p-total-btn" class="entry-del" style="display:none;margin:-6px 0 10px 0;" onclick="document.getElementById('p-amount').value=this.dataset.amount;"></button>
+    <div id="p-period-hint" style="font-size:12px;color:var(--muted);margin:-6px 0 12px 0;"></div>
+    <button class="btn primary" onclick="${saveCall}">${editing?'Guardar cambios':'Guardar pago'}</button>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+  wireMoneyField('p-amount', false);
+  updatePaymentPeriodHint(cardId);
+}
+function findPreviousPeriod(cardId){
+  const cd = ensureCardData(cardId);
+  const cur = currentMonth(cardId);
+  if(!cur || !cur.prevCorte) return null;
+  const key = Object.keys(cd.months).find(k => k!==cur.key && cd.months[k].corte === cur.prevCorte);
+  return key ? cd.months[key] : null;
+}
+function resolvePaymentTargetMonth(cardId, date){
+  const cur = currentMonth(cardId);
+  if(!cur) return null;
+  if(date){
+    const prev = findPreviousPeriod(cardId);
+    if(prev && prev.fechaLimite && date <= prev.fechaLimite){
+      return prev;
+    }
+  }
+  return cur;
+}
+function updatePaymentPeriodHint(cardId){
+  const hintEl = document.getElementById('p-period-hint');
+  const totalBtn = document.getElementById('p-total-btn');
+  if(!hintEl) return;
+  const dateEl = document.getElementById('p-date');
+  const date = dateEl ? dateEl.value : '';
+  const target = resolvePaymentTargetMonth(cardId, date);
+  if(!target){
+    hintEl.textContent = '';
+    if(totalBtn) totalBtn.style.display = 'none';
+    return;
+  }
+  hintEl.innerHTML = `Este pago se aplicará al periodo de <b>${periodMonthLabel(target)}</b>.`;
+  if(totalBtn){
+    const totalDue = Math.max(0, periodSaldoAPagar(cardId, target));
+    if(totalDue > 0.5){
+      totalBtn.style.display = 'inline-block';
+      totalBtn.textContent = `Pagar el total del periodo (${fmt(totalDue)})`;
+      totalBtn.dataset.amount = formatMoneyDisplay(totalDue);
+    } else {
+      totalBtn.style.display = 'none';
+    }
+  }
+}
+function savePayment(cardId){
+  const amount = parseMoneyValue(document.getElementById('p-amount').value);
+  const date = document.getElementById('p-date').value;
+  if(isNaN(amount) || amount<=0){ showModalError('Ingresa un monto de pago válido, mayor a cero.'); return; }
+  if(!date){ showModalError('Selecciona la fecha del pago.'); return; }
+  const m = resolvePaymentTargetMonth(cardId, date);
+  if(!m) return;
+  const cur = currentMonth(cardId);
+  m.pagos = m.pagos || [];
+  m.pagos.push({id:uid(), amount, date});
+  state.addingPayment = false;
+  saveState(); render();
+  if(cur && m.key!==cur.key){
+    showToast(`Este pago se registró en el periodo de ${periodMonthLabel(m)} porque su fecha es igual o anterior a la fecha límite de pago de ese periodo.`);
+  }
+}
+function updatePayment(cardId, paymentId){
+  const amount = parseMoneyValue(document.getElementById('p-amount').value);
+  const date = document.getElementById('p-date').value;
+  if(isNaN(amount) || amount<=0){ showModalError('Ingresa un monto de pago válido, mayor a cero.'); return; }
+  if(!date){ showModalError('Selecciona la fecha del pago.'); return; }
+  const m = currentMonth(cardId);
+  if(!m) return;
+  const p = (m.pagos||[]).find(x=>x.id===paymentId);
+  if(!p) return;
+  p.amount = amount;
+  p.date = date;
+  state.editingPaymentRef = null;
+  saveState(); render();
+}
+function removePayment(cardId, paymentId){
+  const m = currentMonth(cardId);
+  if(!m) return;
+  const p = (m.pagos||[]).find(x=>x.id===paymentId);
+  if(!p) return;
+  m.pagos = m.pagos.filter(x=>x.id!==paymentId);
+  saveState(); render();
+}
+
+function deleteEntry(cardId, entryId){
+  const m = currentMonth(cardId);
+  if(!m) return;
+  m.entries = m.entries.filter(e=>e.id!==entryId);
+  saveState(); render();
+}
+
+// ---------------- ADD / EDIT CARD ----------------
+function openAddCard(){ state.addingCard=true; state.editingCardId=null; render(); }
+function openEditCard(id){ state.editingCardId=id; state.addingCard=false; render(); }
+function closeCardModal(){ state.addingCard=false; state.editingCardId=null; render(); }
+
+function renderCardModal(){
+  const editing = !!state.editingCardId;
+  const c = editing ? state.cards.find(x=>x.id===state.editingCardId) : null;
+  const m = editing ? currentMonth(c.id) : null;
+  const checkSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 12.5L9.5 18L20 6" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="closeCardModal()">&times;</button>
+    <h3>${editing? 'Editar tarjeta' : 'Nueva tarjeta'}</h3>
+    <div id="modal-error" style="display:none;background:var(--alert-soft);color:#8a2a26;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+    <div class="field"><label>Banco / nombre</label><input id="f-bank" value="${c?c.bank:''}" placeholder="Ej. Banorte"></div>
+    <div class="field"><label>Color</label>
+      <div class="palette" id="f-palette">
+        ${PALETTE.map(col=>`<div class="swatch-pick ${c && c.color===col?'sel':''}" style="background:${col}" onclick="pickColor(this,'${col}')">${checkSvg}</div>`).join('')}
+      </div>
+      <input type="hidden" id="f-color" value="${c?c.color:PALETTE[state.cards.length % PALETTE.length]}">
+    </div>
+    <div class="field"><label>Límite de crédito</label><input id="f-limit" type="text" inputmode="decimal" value="${formatMoneyDisplay(c?c.limit:'')}" placeholder="$0.00"></div>
+    ${editing ? `<div class="field"><label>Fecha de inicio</label><input id="f-inicio" type="date" value="${m? (m.inicio||todayISO()) : todayISO()}" onchange="autofillFromInicio('f-inicio','f-end','f-corte')"></div>
+    <div class="field"><label>Fecha fin del periodo</label><input id="f-end" type="date" value="${m? (m.periodEnd||m.corte) : ''}" oninput="this.dataset.touched='1'" onchange="autofillCorteFromEnd('f-end','f-corte')"></div>
+    <div class="field"><label>Fecha de corte</label><input id="f-corte" type="date" value="${m? m.corte : ''}" oninput="this.dataset.touched='1'"></div>
+    <div class="field"><label>Fecha límite de pago</label><input id="f-limite" type="date" value="${m? m.fechaLimite : ''}"></div>` : `<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Después de guardar la tarjeta, vas a crear su primer periodo con las fechas correspondientes.</div>`}
+    <button class="btn primary" onclick="saveCard(${editing?`'${c.id}'`:'null'})">Guardar</button>
+    ${editing? `<button class="btn warn" onclick="deleteCard('${c.id}')">Eliminar tarjeta</button>` : ''}
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+  wireMoneyField('f-limit', false);
+}
+function openCreatePeriod(cardId){
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.id='createperiod-'+uid();
+  const wid = wrap.id;
+  const defaultInicio = todayISO();
+  const defaultEnd = addMonthMinusOneDay(defaultInicio);
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="document.getElementById('${wid}').remove()">&times;</button>
+    <h3>Crear periodo</h3>
+    <div id="modal-error" style="display:none;background:var(--alert-soft);color:#8a2a26;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+    <div class="field"><label>Fecha de inicio</label><input id="cp-inicio" type="date" value="${defaultInicio}" onchange="autofillFromInicio('cp-inicio','cp-end','cp-corte')"></div>
+    <div class="field"><label>Fecha fin del periodo</label><input id="cp-end" type="date" value="${defaultEnd}" oninput="this.dataset.touched='1'" onchange="autofillCorteFromEnd('cp-end','cp-corte')"></div>
+    <div class="field"><label>Fecha de corte</label><input id="cp-corte" type="date" value="${defaultEnd}" oninput="this.dataset.touched='1'"></div>
+    <div class="field"><label>Fecha límite de pago</label><input id="cp-limite" type="date"></div>
+    <button class="btn primary" onclick="saveCreatePeriod('${cardId}','${wid}')">Crear periodo</button>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+function saveCreatePeriod(cardId, modalId){
+  const inicio = document.getElementById('cp-inicio').value;
+  const periodEnd = document.getElementById('cp-end').value;
+  const corte = document.getElementById('cp-corte').value;
+  const limite = document.getElementById('cp-limite').value;
+  if(!inicio || !periodEnd || !corte || !limite){ showModalError('Completa las cuatro fechas.'); return; }
+  createFirstMonth({id:cardId}, {inicio, periodEnd, corte, fechaLimite:limite});
+  document.getElementById(modalId).remove();
+  saveState(); render();
+}
+function pickColor(el, col){
+  document.getElementById('f-color').value = col;
+  document.querySelectorAll('.swatch-pick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function saveCard(editingId){
+  const bank = document.getElementById('f-bank').value.trim();
+  const color = document.getElementById('f-color').value;
+  const limit = parseMoneyValue(document.getElementById('f-limit').value);
+  if(!bank || !limit || isNaN(limit)){ showModalError('Completa el banco y el límite de crédito.'); return; }
+
+  if(editingId){
+    const c = state.cards.find(x=>x.id===editingId);
+    c.bank=bank; c.name=bank; c.color=color; c.limit=limit;
+    const inicio = document.getElementById('f-inicio').value;
+    const periodEnd = document.getElementById('f-end').value;
+    const corte = document.getElementById('f-corte').value;
+    const limite = document.getElementById('f-limite').value;
+    const m = currentMonth(editingId);
+    if(m && inicio && periodEnd && corte && limite){ m.inicio=inicio; m.periodEnd=periodEnd; m.corte=corte; m.fechaLimite=limite; }
+  } else {
+    const id = uid();
+    state.cards.push({id, bank, name:bank, color, limit});
+    state.selectedCardId = id;
+  }
+  state.addingCard=false; state.editingCardId=null;
+  saveState(); render();
+}
+function deleteCard(id){
+  showConfirm('¿Eliminar esta tarjeta y todo su historial? Esta acción no se puede deshacer.', ()=>reallyDeleteCard(id));
+}
+function reallyDeleteCard(id){
+  state.cards = state.cards.filter(c=>c.id!==id);
+  delete state.cardData[id];
+  state.editingCardId=null; state.selectedCardId='all';
+  saveState(); render();
+}
+
+// ---------------- ADD ENTRY ----------------
+function openAddEntry(cardId){ state.addingEntry=cardId; state.editingEntryRef=null; render(); }
+function openEditEntry(cardId, monthKey, entryId){ state.editingEntryRef={cardId, monthKey, entryId}; state.addingEntry=false; render(); }
+function closeEntryModal(){ state.addingEntry=false; state.editingEntryRef=null; render(); }
+
+function renderEntryModal(){
+  const editing = !!state.editingEntryRef;
+  let cardId, existingEntry=null, m=null;
+  if(editing){
+    cardId = state.editingEntryRef.cardId;
+    const cd0 = ensureCardData(cardId);
+    m = cd0.months[state.editingEntryRef.monthKey];
+    existingEntry = m ? (m.entries||[]).find(x=>x.id===state.editingEntryRef.entryId) : null;
+  } else {
+    cardId = state.addingEntry;
+    m = currentMonth(cardId);
+  }
+  const cd = ensureCardData(cardId);
+  const concepts = Object.keys(cd.concepts||{});
+  const monthOpts = periodMonthOptions(m);
+  const todayKey = todayISO().slice(0,7);
+  let defaultMonthKey = monthOpts.find(o=>o.key===todayKey) ? todayKey : (monthOpts.length ? monthOpts[monthOpts.length-1].key : '');
+  if(existingEntry && existingEntry.date){
+    const existingKey = existingEntry.date.slice(0,7);
+    if(monthOpts.find(o=>o.key===existingKey)) defaultMonthKey = existingKey;
+  }
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  const t = existingEntry ? existingEntry.type : 'unico';
+  const saveCall = editing
+    ? `updateEntry('${cardId}','${state.editingEntryRef.monthKey}','${state.editingEntryRef.entryId}')`
+    : `saveEntry('${cardId}')`;
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="closeEntryModal()">&times;</button>
+    <h3>${editing?'Editar movimiento':'Registrar movimiento'}</h3>
+    <div id="modal-error" style="display:none;background:var(--alert-soft);color:#8a2a26;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+    <div class="field"><label>Tipo</label>
+      <select id="e-type" onchange="toggleEntryFields()">
+        <option value="unico" ${t==='unico'?'selected':''}>Compra / gasto único</option>
+        <option value="msi" ${t==='msi'?'selected':''}>Meses sin intereses</option>
+        <option value="sub" ${t==='sub'?'selected':''}>Suscripción recurrente</option>
+      </select>
+    </div>
+    <div class="field"><label>Concepto</label>
+      <input id="e-concept" list="e-concepts" placeholder="Ej. Súper, Netflix..." oninput="suggestAmount()" value="${existingEntry?existingEntry.concept:''}">
+      <datalist id="e-concepts">${concepts.map(k=>`<option value="${k}">`).join('')}</datalist>
+      <div class="concept-suggest" id="e-suggest"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Día</label><input id="e-day" type="number" min="1" max="31" placeholder="Día del mes" value="${existingEntry?existingEntry.day:''}"></div>
+      <div class="field"><label>Mes</label><select id="e-month">${monthOpts.map(o=>`<option value="${o.key}" ${o.key===defaultMonthKey?'selected':''}>${o.label}</option>`).join('')}</select></div>
+    </div>
+    <div class="field" id="e-amount-field"><label>Monto</label><input id="e-amount" type="text" inputmode="decimal" placeholder="$0.00 (negativo si es devolución)" value="${existingEntry && t!=='msi' ? formatMoneyDisplay(existingEntry.amount):''}"></div>
+    <div class="row2" id="e-msi-fields" style="display:none;">
+      <div class="field"><label>Monto original de la compra</label><input id="e-original" type="text" inputmode="decimal" placeholder="$0.00" value="${existingEntry && t==='msi' ? formatMoneyDisplay(existingEntry.originalAmount):''}"></div>
+      <div class="field"><label>Meses totales</label><input id="e-total" type="number" min="1" placeholder="Ej. 6" value="${existingEntry && t==='msi' ? existingEntry.installmentTotal:''}"></div>
+    </div>
+    <div class="field" id="e-current-field" style="display:none;"><label>Número de mensualidad actual</label><input id="e-current" type="number" min="1" placeholder="Ej. 1" value="${existingEntry && t==='msi' ? existingEntry.installmentCurrent:''}"></div>
+    <button class="btn primary" onclick="${saveCall}">${editing?'Guardar cambios':'Guardar movimiento'}</button>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+  wireMoneyField('e-amount', true);
+  wireMoneyField('e-original', false);
+  toggleEntryFields();
+}
+function toggleEntryFields(){
+  const type = document.getElementById('e-type').value;
+  document.getElementById('e-msi-fields').style.display = type==='msi' ? 'grid' : 'none';
+  document.getElementById('e-current-field').style.display = type==='msi' ? 'block' : 'none';
+  document.getElementById('e-amount-field').style.display = type==='msi' ? 'none' : 'block';
+}
+function suggestAmount(){
+  const cardId = state.addingEntry || (state.editingEntryRef && state.editingEntryRef.cardId);
+  const cd = ensureCardData(cardId);
+  const name = document.getElementById('e-concept').value;
+  const box = document.getElementById('e-suggest');
+  const info = cd.concepts[name];
+  if(info){
+    box.textContent = `Última vez: ${fmt(info.lastAmount)} — se usará ese monto si lo dejas igual.`;
+    const type = document.getElementById('e-type').value;
+    if(type==='unico'){ document.getElementById('e-amount').value = formatMoneyDisplay(info.lastAmount); }
+  } else {
+    box.textContent='';
+  }
+}
+function saveEntry(cardId){
+  const type = document.getElementById('e-type').value;
+  const concept = document.getElementById('e-concept').value.trim();
+  const day = document.getElementById('e-day').value;
+  const monthEl = document.getElementById('e-month');
+  if(!concept || !day){ showModalError('Completa el concepto y el día antes de guardar.'); return; }
+  const m = currentMonth(cardId);
+  if(!m){ showModalError('No se encontró un periodo activo para esta tarjeta. Cierra este cuadro, entra a la tarjeta y vuelve a intentar.'); return; }
+  const cd = ensureCardData(cardId);
+  const date = (monthEl && monthEl.value) ? buildEntryDateFromMonth(monthEl.value, day) : buildEntryDate(day);
+  let targetMonth = m;
+  const advanced = autoAdvancePeriodsUntil(cardId, date);
+  if(advanced){
+    targetMonth = advanced;
+    showToast(`La fecha es posterior al fin del periodo, así que se creó y se usó el periodo de ${periodMonthLabel(advanced)}.`);
+  }
+  let entry = { id: uid(), concept, day: Number(day), date, type, isCarried:false };
+
+  if(type==='msi'){
+    const original = parseMoneyValue(document.getElementById('e-original').value);
+    const total = Number(document.getElementById('e-total').value);
+    const cur = Number(document.getElementById('e-current').value||1);
+    if(!original || isNaN(original) || !total || !cur){ showModalError('Completa el monto original, los meses totales y la mensualidad actual.'); return; }
+    entry.originalAmount = original;
+    entry.installmentTotal = total;
+    entry.installmentCurrent = cur;
+    entry.amount = Math.round((original/total)*100)/100;
+    cd.concepts[concept] = {lastAmount: entry.amount, type};
+  } else {
+    const amount = parseMoneyValue(document.getElementById('e-amount').value);
+    if(isNaN(amount)){ showModalError('Ingresa un monto válido.'); return; }
+    entry.amount = amount;
+    cd.concepts[concept] = {lastAmount: amount, type};
+  }
+
+  targetMonth.entries = targetMonth.entries || [];
+  targetMonth.entries.push(entry);
+  state.addingEntry=false;
+  saveState(); render();
+}
+function updateEntry(cardId, monthKey, entryId){
+  const type = document.getElementById('e-type').value;
+  const concept = document.getElementById('e-concept').value.trim();
+  const day = document.getElementById('e-day').value;
+  if(!concept || !day){ showModalError('Completa el concepto y el día antes de guardar.'); return; }
+  const cd = ensureCardData(cardId);
+  const m = cd.months[monthKey];
+  if(!m){ showModalError('No se encontró el periodo de este movimiento.'); return; }
+  const entry = (m.entries||[]).find(x=>x.id===entryId);
+  if(!entry){ showModalError('No se encontró el movimiento a editar.'); return; }
+
+  let updated = { concept, day: Number(day), type };
+  const monthEl = document.getElementById('e-month');
+  const selectedMonthKey = monthEl ? monthEl.value : null;
+  const existingMonthKey = entry.date ? entry.date.slice(0,7) : null;
+  if(Number(day) !== entry.day || !entry.date || (selectedMonthKey && selectedMonthKey !== existingMonthKey)){
+    updated.date = selectedMonthKey ? buildEntryDateFromMonth(selectedMonthKey, day) : buildEntryDate(day);
+  }
+  if(type==='msi'){
+    const original = parseMoneyValue(document.getElementById('e-original').value);
+    const total = Number(document.getElementById('e-total').value);
+    const cur = Number(document.getElementById('e-current').value||1);
+    if(!original || isNaN(original) || !total || !cur){ showModalError('Completa el monto original, los meses totales y la mensualidad actual.'); return; }
+    updated.originalAmount = original;
+    updated.installmentTotal = total;
+    updated.installmentCurrent = cur;
+    updated.amount = Math.round((original/total)*100)/100;
+  } else {
+    const amount = parseMoneyValue(document.getElementById('e-amount').value);
+    if(isNaN(amount)){ showModalError('Ingresa un monto válido.'); return; }
+    updated.amount = amount;
+  }
+
+  Object.assign(entry, updated);
+  if(type!=='msi'){ delete entry.originalAmount; delete entry.installmentTotal; delete entry.installmentCurrent; }
+  cd.concepts[concept] = {lastAmount: entry.amount, type};
+
+  state.editingEntryRef = null;
+  saveState(); render();
+}
+
+// ---------------- HISTORY ----------------
+function openHistory(cardId){ state.view='history'; state.historyCardId=cardId; render(); }
+function backFromHistory(){ state.view='dashboard'; render(); }
+
+// integrate history view into card detail rendering via separate screen
+const _origRenderCardDetail = renderCardDetail;
+function renderCardDetail2(cardId){ return _origRenderCardDetail(cardId); }
+
+function openHistoryDetail(cardId, key){ state.historyMonthKey = key; state.historyCardId2 = cardId; render(); }
+function closeHistoryDetail(){ state.historyMonthKey = null; render(); }
+
+function renderHistoryDetailModal(){
+  const cd = ensureCardData(state.historyCardId2);
+  const m = cd.months[state.historyMonthKey];
+  const c = state.cards.find(x=>x.id===state.historyCardId2);
+  if(!m || !c) return;
+  const total = monthTotal(m);
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  let rows = [...(m.entries||[])].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(e=>{
+    let tag = e.type==='msi'? `<span class="tag msi">${e.installmentCurrent} de ${e.installmentTotal}</span>` : (e.type==='sub'?'<span class="tag sub">Suscripción</span>':'');
+    let metaExtra = '';
+    if(e.type==='msi'){
+      const rem = Number(e.originalAmount) - (Number(e.originalAmount)/e.installmentTotal)*e.installmentCurrent;
+      metaExtra = ` · Restante: ${fmt(rem)}`;
+    }
+    return `<div class="entry-row">
+      <div class="entry-left" style="cursor:pointer;" onclick="showEntryDetailById('${state.historyCardId2}','${m.key}','${e.id}')">
+        <div class="concept">${e.concept} ${tag}</div>
+        <div class="meta">${e.date ? fmtDate(e.date) : 'Día '+e.day}${metaExtra}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="entry-amt num ${e.amount<0?'neg':''}">${fmt(e.amount)}</div>
+        <button class="entry-del" onclick="event.stopPropagation(); openEditEntry('${state.historyCardId2}','${m.key}','${e.id}')">editar</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Sin movimientos.</div>';
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="closeHistoryDetail()">&times;</button>
+    <h3>${c.bank}</h3>
+    <div class="period-line"><b>${periodMonthLabel(m)}</b> · ${periodRangeLabel(m)} · Límite de pago: <b>${fmtDate(m.fechaLimite)}</b>
+      <button class="entry-del" style="margin-left:6px;" onclick="openEditPeriodDates('${state.historyCardId2}','${state.historyMonthKey}')">editar fechas</button>
+    </div>
+    <div class="card-form">
+      ${periodCarryOver(state.historyCardId2, m) > 0.5 ? `<div class="metric"><div class="label">Arrastrado del periodo anterior</div><div class="value num">${fmt(periodCarryOver(state.historyCardId2, m))}</div></div>` : ''}
+      <div class="metric" style="margin-top:8px;"><div class="label">Movimientos de este periodo</div><div class="value num">${fmt(total)}</div></div>
+      <div class="metric" style="margin-top:8px;"><div class="label">Total a pagar</div><div class="value num">${fmt(Math.max(0,periodSaldoAPagar(state.historyCardId2, m)))}</div></div>
+      <div class="metric" style="margin-top:8px;"><div class="label">Pagado en el periodo</div><div class="value num">${fmt(monthPagosTotal(m))}</div></div>
+    </div>
+    ${(m.pagos && m.pagos.length>0) ? `<div class="card-form">
+      <div class="field-label-row" style="font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:6px;">Pagos de este periodo</div>
+      ${[...m.pagos].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(p=>`<div class="entry-row"><div class="entry-left"><div class="concept">Pago</div><div class="meta">${p.date?fmtDate(p.date):''}</div></div><div class="entry-amt num">${fmt(p.amount)}</div></div>`).join('')}
+    </div>` : ''}
+    ${rows}
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+function openEditPeriodDates(cardId, monthKey){
+  const cd = ensureCardData(cardId);
+  const m = cd.months[monthKey];
+  if(!m) return;
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  wrap.id='editdates-'+uid();
+  const wid = wrap.id;
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="document.getElementById('${wid}').remove()">&times;</button>
+    <h3>Editar fechas del periodo</h3>
+    <div class="field"><label>Fecha de inicio</label><input id="ed-inicio" type="date" value="${m.inicio||addMonths(m.corte,-1)}" onchange="autofillFromInicio('ed-inicio','ed-end','ed-corte')"></div>
+    <div class="field"><label>Fecha fin del periodo</label><input id="ed-end" type="date" value="${m.periodEnd||m.corte}" oninput="this.dataset.touched='1'" onchange="autofillCorteFromEnd('ed-end','ed-corte')"></div>
+    <div class="field"><label>Fecha de corte</label><input id="ed-corte" type="date" value="${m.corte}" oninput="this.dataset.touched='1'"></div>
+    <div class="field"><label>Fecha límite de pago</label><input id="ed-limite" type="date" value="${m.fechaLimite}"></div>
+    <button class="btn primary" onclick="saveEditedPeriodDates('${cardId}','${monthKey}','${wid}')">Guardar</button>
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+function saveEditedPeriodDates(cardId, monthKey, modalId){
+  const cd = ensureCardData(cardId);
+  const m = cd.months[monthKey];
+  if(!m) return;
+  m.inicio = document.getElementById('ed-inicio').value;
+  m.periodEnd = document.getElementById('ed-end').value;
+  m.corte = document.getElementById('ed-corte').value;
+  m.fechaLimite = document.getElementById('ed-limite').value;
+  document.getElementById(modalId).remove();
+  saveState(); render();
+}
+
+// Hook history button into full-screen list instead of modal for the list itself
+function openHistory2(cardId){
+  const cd = ensureCardData(cardId);
+  const c = state.cards.find(x=>x.id===cardId);
+  const keys = Object.keys(cd.months).filter(k=>k!==cd.currentMonthKey).sort((a,b)=> (cd.months[b].corte||'').localeCompare(cd.months[a].corte||''));
+  const wrap = document.createElement('div');
+  wrap.className='modal-bg';
+  let list = keys.map(k=>{
+    const mm = cd.months[k];
+    return `<div class="hist-item">
+      <div onclick="openHistoryDetail('${cardId}','${k}')" style="cursor:pointer;">
+        <div class="top"><span>${periodMonthLabel(mm)}</span><span class="num">${fmt(monthTotal(mm))}</span></div>
+        <div class="sub">${periodRangeLabel(mm)} · Límite de pago: ${fmtDate(mm.fechaLimite)}</div>
+      </div>
+      <button class="entry-del" style="margin-top:8px;" onclick="event.stopPropagation(); deletePeriod('${cardId}','${k}')">Eliminar periodo</button>
+      <button class="entry-del" style="margin-top:8px;" onclick="event.stopPropagation(); reopenAsCurrent('${cardId}','${k}')">Reabrir como periodo actual</button>
+    </div>`;
+  }).join('') || '<div class="empty">Aún no hay periodos cerrados para esta tarjeta.</div>';
+  wrap.innerHTML = `<div class="modal">
+    <button class="modal-close" onclick="this.closest('.modal-bg').remove()">&times;</button>
+    <h3>Historial — ${c.bank}</h3>
+    ${list}
+  </div>`;
+  document.getElementById('app').appendChild(wrap);
+}
+function reopenAsCurrent(cardId, monthKey){
+  const cd = ensureCardData(cardId);
+  const m = cd.months[monthKey];
+  if(!m) return;
+  showConfirm(`¿Volver a usar ${periodMonthLabel(m)} como el periodo actual? El que era actual seguirá existiendo (podrás verlo en Historial), solo dejará de ser el activo.`, ()=>{
+    m.closed = false;
+    cd.currentMonthKey = monthKey;
+    saveState(); render();
+  });
+}
+function deletePeriod(cardId, monthKey){
+  showConfirm('¿Eliminar este periodo y todos sus movimientos y pagos? Esta acción no se puede deshacer.', ()=>reallyDeletePeriod(cardId, monthKey));
+}
+function reallyDeletePeriod(cardId, monthKey){
+  const cd = ensureCardData(cardId);
+  const m = cd.months[monthKey];
+  if(!m || monthKey===cd.currentMonthKey) return;
+  delete cd.months[monthKey];
+  saveState(); render();
+  showToast('Periodo eliminado.');
+}
+// override the earlier lightweight openHistory to use the full list modal
+openHistory = openHistory2;
+
+// --- Acceso ---
+// No se guarda la contraseña en texto plano: se compara contra un hash SHA-256.
+// Esto es solo una traba básica, no seguridad real (el código fuente sigue siendo visible).
+const AUTH_HASH = '63ad95b658541661df363e7bc76f19b77c6291b82270dd5e8b9b189d6969489f';
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function renderLockScreen(errorMsg){
+  document.getElementById('app').outerHTML = `<div id="app">
+    <div class="lock-screen">
+      <div class="lock-card">
+        <h1>Mis Tarjetas</h1>
+        <div class="sub">Ingresa tus datos para continuar</div>
+        ${errorMsg ? `<div style="background:var(--alert-soft);color:#8a2a26;padding:9px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;">${errorMsg}</div>` : ''}
+        <div class="field"><label>Usuario</label><input id="lk-user" type="text" autocomplete="username"></div>
+        <div class="field"><label>Contraseña</label><input id="lk-pass" type="password" autocomplete="current-password"></div>
+        <button class="btn primary" onclick="attemptUnlock()">Entrar</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('lk-pass').addEventListener('keydown', (e)=>{ if(e.key==='Enter') attemptUnlock(); });
+}
+async function attemptUnlock(){
+  const user = document.getElementById('lk-user').value.trim();
+  const pass = document.getElementById('lk-pass').value;
+  const hash = await sha256Hex(`${user}:${pass}`);
+  if(hash === AUTH_HASH){
+    loadState();
+  } else {
+    renderLockScreen('Usuario o contraseña incorrectos.');
+  }
+}
+renderLockScreen();
+</script>
+</body>
+</html>
